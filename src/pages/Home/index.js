@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TextInput,
   TouchableHighlight,
   FlatList,
+  Keyboard,
+  Dimensions,
 } from "react-native";
 import {
   Conteudo,
@@ -16,89 +18,61 @@ import {
   Titulo,
   ContainerItem,
 } from "./styled";
-import * as kanjiApi from "../../services/Kanji";
 import Constants from "expo-constants";
 import { MaterialCommunityIcons, AntDesign } from "@expo/vector-icons";
 import { useFetch } from "../../hooks/useFetch";
+import ToggleSwitch from "toggle-switch-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function HomePage({ navigation }) {
   const { data: kanjis } = useFetch("/kanjis");
   const [searching, setSearching] = useState("");
+  const [themeBlack, setThemeBlack] = useState(false);
+  const [clear, setClear] = useState(false);
+  const { width, height } = Dimensions.get("window");
 
-  // useEffect(() => {
-  //   if (kanjis) {
-  //     setListaKanjis(kanjis);
-  //   }
-  // }, [kanjis]);
+  const saveTheme = async (value) => {
+    try {
+      setThemeBlack(value);
+      const valor = value ? "true" : "false";
+      await AsyncStorage.setItem("BlackTheme", valor);
+    } catch (e) {
+      console.log("Erro ao salvar", e);
+    }
+  };
 
-  // const kanjis = [
-  //   {
-  //     kanji: {
-  //       diagrama: "内",
-  //       romaji: "Uchi",
-  //     },
-  //   },
-  //   {
-  //     kanji: {
-  //       diagrama: "家",
-  //       romaji: "Ie",
-  //     },
-  //   },
-  //   {
-  //     kanji: {
-  //       diagrama: "米",
-  //       romaji: "Kome",
-  //     },
-  //   },
-  //   {
-  //     kanji: {
-  //       diagrama: "日",
-  //       romaji: "Hi",
-  //     },
-  //   },
-  //   {
-  //     kanji: {
-  //       diagrama: "水",
-  //       romaji: "Mizu",
-  //     },
-  //   },
-  //   {
-  //     kanji: {
-  //       diagrama: "歩く",
-  //       romaji: "Aruku",
-  //     },
-  //   },
-  //   {
-  //     kanji: {
-  //       diagrama: "電車",
-  //       romaji: "Densha",
-  //     },
-  //   },
-  //   {
-  //     kanji: {
-  //       diagrama: "危険",
-  //       romaji: "Kiken",
-  //     },
-  //   },
-  //   {
-  //     kanji: {
-  //       diagrama: "空",
-  //       romaji: "Sora",
-  //     },
-  //   },
-  //   {
-  //     kanji: {
-  //       diagrama: "空",
-  //       romaji: "Sora",
-  //     },
-  //   },
-  // ];
+  const recuperaTheme = async () => {
+    try {
+      const value = await AsyncStorage.getItem("BlackTheme");
+      if (value !== null) {
+        const resultadoThema = value === "true" ? true : false;
+        setThemeBlack(resultadoThema);
+      }
+    } catch (e) {
+      console.log("Erro ao recuperar dados", e);
+    }
+  };
+  useEffect(() => {
+    recuperaTheme();
+  }, []);
+
+  useEffect(() => {
+    if (searching.length >= 1) {
+      setClear(true);
+    } else {
+      setClear(false);
+    }
+  }, [searching]);
 
   function renderItem({ item }) {
     return (
       <ContainerItem>
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <Text style={{ fontSize: 30, color: "#FF0000" }}>{item.kanji}</Text>
+          <Text
+            style={{ fontSize: 30, color: themeBlack ? "#FFFFFF" : "#FF0000" }}
+          >
+            {item.kanji}
+          </Text>
           <TouchableHighlight
             onPress={() => {
               navigation.navigate("Detalhe", {
@@ -108,11 +82,19 @@ export default function HomePage({ navigation }) {
             }}
             underlayColor="transparent"
           >
-            <AntDesign name="right" size={24} color="#777777" />
+            <AntDesign
+              name="right"
+              size={24}
+              color={themeBlack ? "#FFFFFF" : "#777777"}
+            />
           </TouchableHighlight>
         </View>
         <View>
-          <Text style={{ fontSize: 15, color: "#777777" }}>{item.Romaji}</Text>
+          <Text
+            style={{ fontSize: 15, color: themeBlack ? "#FFFFFF" : "#777777" }}
+          >
+            {item.Romaji}
+          </Text>
         </View>
       </ContainerItem>
     );
@@ -122,7 +104,12 @@ export default function HomePage({ navigation }) {
     <>
       {kanjis ? (
         <>
-          <SafeAreaView style={{ flex: 1 }}>
+          <SafeAreaView
+            style={{
+              flex: 1,
+              backgroundColor: themeBlack ? "#121212" : "#FFFFFF",
+            }}
+          >
             <Header
               style={{
                 paddingTop:
@@ -130,7 +117,9 @@ export default function HomePage({ navigation }) {
               }}
             >
               <Logo />
-              <Titulo> Asuka Jyuku</Titulo>
+              <Titulo style={{ color: themeBlack ? "#FFFFFF" : "#707070" }}>
+                Asuka Jyuku
+              </Titulo>
             </Header>
             <BarBusca>
               <View
@@ -147,7 +136,7 @@ export default function HomePage({ navigation }) {
                   borderBottomWidth: 1,
                   borderBottomWidth: 1,
                   borderColor: "#777777",
-                  backgroundColor: "#f5f5f5",
+                  backgroundColor: themeBlack ? "#3D3D3D" : "#FFFFFF",
                 }}
               >
                 <TouchableHighlight
@@ -169,15 +158,73 @@ export default function HomePage({ navigation }) {
                     width: 200,
                     height: "100%",
                     padding: 5,
-                    backgroundColor: "#f5f5f5",
+                    backgroundColor: themeBlack ? "#3D3D3D" : "#FFFFFF",
                     // marginBottom: 20,
                     color: "#000",
                   }}
                   placeholder="Buscar Kanji por romaji"
                   placeholderTextColor="#777777"
                 />
+                {clear ? (
+                  <TouchableHighlight
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      setSearching("");
+                      setClear(false);
+                    }}
+                    underlayColor="transparent"
+                  >
+                    <AntDesign
+                      style={{ marginLeft: width > 360 ? "55%" : "45%" }}
+                      name="close"
+                      size={20}
+                      color="#777777"
+                    />
+                  </TouchableHighlight>
+                ) : null}
               </View>
             </BarBusca>
+            <View
+              style={{
+                marginBottom: "2%",
+                flexDirection: "row",
+                justifyContent: "flex-end",
+                paddingRight: "5%",
+              }}
+            >
+              <Text
+                style={{
+                  marginRight: "2%",
+                  color: themeBlack ? "#FFFFFF" : "#707070",
+                }}
+              >
+                Dark
+              </Text>
+              <ToggleSwitch
+                isOn={themeBlack}
+                onColor="#FF665A"
+                offColor="#777777"
+                size="medium"
+                onToggle={(isOn) => {
+                  saveTheme(isOn);
+                }}
+              />
+            </View>
+            <View
+              style={{
+                justifyContent: "center",
+                alignContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <View
+                style={{
+                  width: "93%",
+                  borderBottomColor: "#B8B8B8",
+                  borderBottomWidth: 1,
+                }}
+              />
+            </View>
             <Conteudo>
               {/* <Button
               title="Detail"
